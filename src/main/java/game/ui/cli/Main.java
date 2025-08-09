@@ -119,9 +119,18 @@ public class Main {
             renderer.render(gameState);
 
             System.out.print("Cmd (w,a,s,d,e,p,.,1,2,q): ");
-            String input = scanner.nextLine().toLowerCase();
-            if (input.isEmpty()) continue;
-            char command = input.charAt(0);
+            String input;
+            try {
+                input = scanner.nextLine();
+            } catch (java.util.NoSuchElementException e) {
+                // Input stream was closed (e.g., in a non-interactive environment)
+                break; // Exit loop cleanly
+            }
+
+            if (input == null || input.isEmpty()) {
+                continue; // Handle empty input
+            }
+            char command = input.toLowerCase().charAt(0);
 
             boolean turnTaken = false;
             switch (command) {
