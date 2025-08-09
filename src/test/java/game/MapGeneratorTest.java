@@ -14,7 +14,7 @@ import java.util.List;
 public class MapGeneratorTest {
 
     @RepeatedTest(10) // Run a few times with different seeds to be sure
-    void testMapConnectivity() {
+    void testMapConnectivityWithoutVents() {
         Rng rng = new Rng(System.currentTimeMillis());
         BspGenerator generator = new BspGenerator(rng, 40, 20);
         TileMap map = generator.generate();
@@ -26,24 +26,9 @@ public class MapGeneratorTest {
         assertTrue(!crates.isEmpty() || generator.getRooms().size() < 4, "Crates should be placed if there are enough rooms.");
 
         for (Point crate : crates) {
-            Point startPoint = findWalkableNeighbor(map, airlock);
-            assertNotNull(startPoint, "Should be a walkable tile next to the airlock.");
-
-            List<Point> path = Pathfinder.findPath(map, startPoint, crate);
-            assertFalse(path.isEmpty(), "Should be a path from airlock to crate at " + crate);
+            // Use findAiPath to ensure vents are not used for the main path
+            List<Point> path = Pathfinder.findAiPath(map, airlock, crate);
+            assertFalse(path.isEmpty(), "Should be a path from airlock to crate at " + crate + " without using vents.");
         }
-    }
-
-    private Point findWalkableNeighbor(TileMap map, Point p) {
-        int[] dx = {0, 0, 1, -1};
-        int[] dy = {1, -1, 0, 0};
-        for (int i = 0; i < 4; i++) {
-            int newX = p.x + dx[i];
-            int newY = p.y + dy[i];
-            if (map.isInBounds(newX, newY) && map.getTile(newX, newY).isWalkable()) {
-                return new Point(newX, newY);
-            }
-        }
-        return null;
     }
 }

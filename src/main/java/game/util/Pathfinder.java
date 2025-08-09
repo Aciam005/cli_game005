@@ -31,6 +31,31 @@ public class Pathfinder {
         return Collections.emptyList(); // No path found
     }
 
+    public static List<Point> findAiPath(TileMap map, Point start, Point end) {
+        Queue<Point> frontier = new LinkedList<>();
+        frontier.add(start);
+
+        Map<Point, Point> cameFrom = new HashMap<>();
+        cameFrom.put(start, null);
+
+        while (!frontier.isEmpty()) {
+            Point current = frontier.poll();
+
+            if (current.equals(end)) {
+                return reconstructPath(cameFrom, current);
+            }
+
+            for (Point next : getAiNeighbors(map, current)) {
+                if (!cameFrom.containsKey(next)) {
+                    frontier.add(next);
+                    cameFrom.put(next, current);
+                }
+            }
+        }
+
+        return Collections.emptyList(); // No path found
+    }
+
     public static List<Point> getNeighbors(TileMap map, Point p) {
         List<Point> neighbors = new ArrayList<>();
         int[] dx = {0, 0, 1, -1};
@@ -41,6 +66,24 @@ public class Pathfinder {
             int newY = p.y + dy[i];
             if (map.isInBounds(newX, newY) && map.getTile(newX, newY).isWalkable()) {
                 neighbors.add(new Point(newX, newY));
+            }
+        }
+        return neighbors;
+    }
+
+    public static List<Point> getAiNeighbors(TileMap map, Point p) {
+        List<Point> neighbors = new ArrayList<>();
+        int[] dx = {0, 0, 1, -1};
+        int[] dy = {1, -1, 0, 0};
+
+        for (int i = 0; i < 4; i++) {
+            int newX = p.x + dx[i];
+            int newY = p.y + dy[i];
+            if (map.isInBounds(newX, newY)) {
+                var tile = map.getTile(newX, newY);
+                if (tile.isWalkable() && !tile.isVent()) {
+                    neighbors.add(new Point(newX, newY));
+                }
             }
         }
         return neighbors;

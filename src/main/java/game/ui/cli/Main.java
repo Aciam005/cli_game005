@@ -2,6 +2,7 @@ package game.ui.cli;
 
 import game.core.ecs.Entity;
 import game.core.ecs.components.*;
+import game.core.ecs.systems.ShootingSystem;
 import game.core.game.Direction;
 import game.core.game.GameState;
 import game.core.game.TurnEngine;
@@ -22,6 +23,8 @@ public class Main {
     private static TurnEngine turnEngine;
     private static AsciiRenderer renderer;
     private static Scanner scanner;
+    private static ShootingSystem shootingSystem;
+    public static List<Point> aimRay = null;
 
     public static void main(String[] args) {
         if (!"true".equals(System.getProperty("feature.signalRunner", "true"))) {
@@ -53,6 +56,7 @@ public class Main {
         turnEngine = new TurnEngine(gameState, rng);
         renderer = new AsciiRenderer();
         scanner = new Scanner(System.in);
+        shootingSystem = new ShootingSystem();
 
         // Player
         Point startPos = generator.getAirlockLocation();
@@ -60,11 +64,13 @@ public class Main {
                 new Position(startPos.x, startPos.y),
                 new Stats(10, 10, 3, 2), // HP, MaxHP, ATK, EV
                 new Inventory(),
+                new PlayerState(),
                 new Flags() {{ isPlayer = true; }}
         );
         gameState.player.get(Inventory.class).ifPresent(inv -> {
             inv.items.put("emp-charge", 1);
             inv.items.put("med-gel", 1);
+            inv.items.put("ammo", 6);
         });
         gameState.entities.add(gameState.player);
 
@@ -116,9 +122,10 @@ public class Main {
     private static void runGameLoop() {
         boolean running = true;
         while (running) {
-            renderer.render(gameState);
+            renderer.render(gameState, aimRay);
+            aimRay = null; // Clear ray after one frame
 
-            System.out.print("Cmd (w,a,s,d,e,p,.,1,2,q): ");
+            System.out.print("Cmd (w,a,s,d,e,p,.,1,2,3,f,q): ");
             String input;
             try {
                 input = scanner.nextLine();
@@ -168,6 +175,42 @@ public class Main {
                     }
                 }
                 case 'q' -> running = false;
+                case '3' -> {
+                    gameState.player.get(PlayerState.class).ifPresent(ps -> {
+                        if (ps.mode == PlayerState.WeaponMode.DEFAULT) {
+                            ps.mode = PlayerState.WeaponMode.PISTOL;
+                            gameState.messageLog.add("Pistol equipped.");
+                        } else {
+                            ps.mode = PlayerState.WeaponMode.DEFAULT;
+                            gameState.messageLog.add("Switched to default mode.");
+                        }
+                    });
+                    break; // No turn taken
+                }
+                case 'f' -> {
+                    if (gameState.player.get(PlayerState.class).map(ps -> ps.mode == PlayerState.WeaponMode.PISTOL).orElse(false)) {
+                        System.out.print("Fire direction (w,a,s,d): ");
+                        String fireDirStr = scanner.nextLine().toLowerCase();
+                        if (!fireDirStr.isEmpty()) {
+                            Direction dir = switch (fireDirStr.charAt(0)) {
+                                case 'w' -> Direction.NORTH;
+                                case 'a' -> Direction.WEST;
+                                case 's' -> Direction.SOUTH;
+                                case 'd' -> Direction.EAST;
+                                default -> null;
+                            };
+                            if (dir != null) {
+                                turnTaken = shootingSystem.fire(gameState, dir);
+                                if (turnTaken) {
+                                    aimRay = new ArrayList<>(shootingSystem.rayPath);
+                                }
+                            }
+                        }
+                    } else {
+                        gameState.messageLog.add("Pistol not equipped.");
+                    }
+                    break;
+                }
             }
 
             if (turnTaken) {
@@ -175,13 +218,13 @@ public class Main {
             }
 
             if (gameState.player.get(Stats.class).get().hp() <= 0) {
-                renderer.render(gameState);
+                renderer.render(gameState, null);
                 System.out.println("\n--- You have died. Game Over. ---");
                 running = false;
             }
             Position playerPos = gameState.player.get(Position.class).get();
             if (gameState.map.getTile(playerPos.x(), playerPos.y()) == Tile.AIRLOCK && gameState.cratesCollected >= 3) {
-                renderer.render(gameState);
+                renderer.render(gameState, null);
                 System.out.println("\n--- You collected all the crates and returned to the airlock. You win! ---");
                 running = false;
             }

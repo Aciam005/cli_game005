@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="game.CombatSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-09T13:56:30" hostname="devbox" time="0.011">
+<testsuite name="game.CombatSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-09T20:07:36" hostname="devbox" time="0.011">
   <properties/>
-  <testcase name="testCombatGuaranteedHit()" classname="game.CombatSystemTest" time="0.003"/>
-  <testcase name="testCombatGuaranteedMiss()" classname="game.CombatSystemTest" time="0.002"/>
-  <testcase name="testTurretLoSBlocked()" classname="game.CombatSystemTest" time="0.002"/>
+  <testcase name="testCombatGuaranteedHit()" classname="game.CombatSystemTest" time="0.002"/>
+  <testcase name="testCombatGuaranteedMiss()" classname="game.CombatSystemTest" time="0.001"/>
+  <testcase name="testTurretLoSBlocked()" classname="game.CombatSystemTest" time="0.003"/>
   <testcase name="testTurretSeesPlayerAndAttacks()" classname="game.CombatSystemTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

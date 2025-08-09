@@ -18,6 +18,7 @@ import java.util.List;
 
 public class TurnEngine {
     private final GameState gameState;
+    private final Rng rng;
     private final CombatSystem combatSystem;
     private final TurretSystem turretSystem;
     private final ItemSystem itemSystem;
@@ -28,6 +29,7 @@ public class TurnEngine {
 
     public TurnEngine(GameState gameState, Rng rng) {
         this.gameState = gameState;
+        this.rng = rng;
         this.combatSystem = new CombatSystem(rng);
         this.turretSystem = new TurretSystem(combatSystem);
         this.itemSystem = new ItemSystem();
@@ -92,7 +94,7 @@ public class TurnEngine {
     }
 
     public boolean handleInteract() {
-        return interactionSystem.handleInteraction(gameState, this);
+        return interactionSystem.handleInteraction(gameState, this, rng);
     }
 
     public Entity getEntityAt(int x, int y) {
@@ -110,7 +112,11 @@ public class TurnEngine {
 
     public void updateFov() {
         gameState.player.get(Position.class).ifPresent(pos -> {
-            boolean[][] fov = Fov.computeFov(gameState.map, pos.x(), pos.y(), 8);
+            int fovRadius = 4; // Default FOV
+            if (gameState.map.getTile(pos.x(), pos.y()).isVent()) {
+                fovRadius = 2; // Reduced FOV in vents
+            }
+            boolean[][] fov = Fov.computeFov(gameState.map, pos.x(), pos.y(), fovRadius);
             gameState.updateVisibility(fov);
         });
     }

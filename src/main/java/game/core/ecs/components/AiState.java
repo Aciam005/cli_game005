@@ -4,5 +4,6 @@ public enum AiState {
     PATROL,      // Moving along a set path or wandering
     INVESTIGATE, // Moving towards a noise source
     CHASE,       // Actively pursuing the player
-    SEARCH       // Lost sight of player, moving to last known location
+    SEARCH,      // Lost sight of player, moving to last known location
+    CAMP_VENT    // Waiting near a vent exit
 }
