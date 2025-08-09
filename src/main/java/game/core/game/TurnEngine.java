@@ -110,7 +110,7 @@ public class TurnEngine {
 
     public void updateFov() {
         gameState.player.get(Position.class).ifPresent(pos -> {
-            boolean[][] fov = Fov.computeFov(gameState.map, pos.x(), pos.y(), 4);
+            boolean[][] fov = Fov.computeFov(gameState.map, pos.x(), pos.y(), 8);
             gameState.updateVisibility(fov);
         });
     }
