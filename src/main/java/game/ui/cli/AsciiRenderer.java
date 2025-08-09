@@ -58,13 +58,21 @@ public class AsciiRenderer {
 
     private void drawHud(StringBuilder sb, GameState gameState) {
         sb.append("----------------------------------------\n");
-        // HP
+        // Line 1: HP, Pos, Crates
         gameState.player.get(Stats.class).ifPresent(stats ->
             sb.append(String.format("HP: %d/%d   ", stats.hp(), stats.maxHp()))
         );
-        // Crates
+        gameState.player.get(Position.class).ifPresent(pos ->
+            sb.append(String.format("Pos: (%d, %d)   ", pos.x(), pos.y()))
+        );
         sb.append(String.format("Crates: %d/3   ", gameState.cratesCollected));
-        // Inventory
+        sb.append("\n");
+
+        // Line 2: Standing on, Items
+        gameState.player.get(Position.class).ifPresent(pos -> {
+            Tile tile = gameState.map.getTile(pos.x(), pos.y());
+            sb.append(String.format("On: %-15s ", tile.name())); // Padded for alignment
+        });
         gameState.player.get(Inventory.class).ifPresent(inv -> {
             String items = inv.items.entrySet().stream()
                 .filter(e -> e.getValue() > 0)
@@ -72,7 +80,9 @@ public class AsciiRenderer {
                 .collect(Collectors.joining(" "));
             sb.append("Items: ").append(items);
         });
-        sb.append("\n----------------------------------------\n");
+        sb.append("\n");
+        sb.append("Legend: @=Player, D=Drone, T=Turret, C=Crate, *=Item, $=Terminal\n");
+        sb.append("----------------------------------------\n");
     }
 
     private char getTileChar(Tile tile) {
