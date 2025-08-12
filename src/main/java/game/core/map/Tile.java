@@ -7,7 +7,8 @@ public enum Tile {
     DOOR_OPEN(true, true),
     BULKHEAD_CLOSED(false, false), // One-way
     BULKHEAD_OPEN(true, true),     // One-way
-    AIRLOCK(true, true);
+    AIRLOCK(true, true),
+    VENT(true, false);
 
     private final boolean walkable;
     private final boolean transparent;
@@ -23,5 +24,9 @@ public enum Tile {
 
     public boolean isTransparent() {
         return transparent;
+    }
+
+    public boolean isVent() {
+        return this == VENT;
     }
 }

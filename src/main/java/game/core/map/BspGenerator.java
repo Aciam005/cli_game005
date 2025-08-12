@@ -67,6 +67,9 @@ public class BspGenerator {
         // Place doors
         placeDoors();
 
+        // Place vents
+        generateVents();
+
         // Place features
         placeFeatures();
 
@@ -130,6 +133,47 @@ public class BspGenerator {
         for (int i = 0; i < 2 && !doorLocations.isEmpty(); i++) {
             Point bulkheadPos = doorLocations.remove(0);
             map.setTile(bulkheadPos.x, bulkheadPos.y, Tile.BULKHEAD_CLOSED);
+        }
+    }
+
+    private void generateVents() {
+        if (rooms.size() < 2) {
+            return;
+        }
+        int ventCount = rng.nextInt(3) + 3; // 3 to 5 vents
+        List<Rectangle> tempRooms = new ArrayList<>(rooms);
+        Collections.shuffle(tempRooms, new Random(rng.nextInt(Integer.MAX_VALUE)));
+
+        for (int i = 0; i < ventCount && tempRooms.size() >= 2; i++) {
+            Rectangle r1 = tempRooms.remove(0);
+            Rectangle r2 = tempRooms.get(0); // Peek
+
+            Point p1 = new Point(r1.x + r1.width / 2, r1.y + r1.height / 2);
+            Point p2 = new Point(r2.x + r2.width / 2, r2.y + r2.height / 2);
+
+            if (rng.nextInt(2) == 0) {
+                carveHVent(p1.x, p2.x, p1.y);
+                carveVVent(p1.y, p2.y, p2.x);
+            } else {
+                carveVVent(p1.y, p2.y, p1.x);
+                carveHVent(p1.x, p2.x, p2.y);
+            }
+        }
+    }
+
+    private void carveHVent(int x1, int x2, int y) {
+        for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
+            if (map.getTile(x, y) == Tile.WALL) {
+                map.setTile(x, y, Tile.VENT);
+            }
+        }
+    }
+
+    private void carveVVent(int y1, int y2, int x) {
+        for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
+            if (map.getTile(x, y) == Tile.WALL) {
+                map.setTile(x, y, Tile.VENT);
+            }
         }
     }
 

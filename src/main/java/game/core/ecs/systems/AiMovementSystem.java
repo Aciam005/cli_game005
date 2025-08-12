@@ -28,12 +28,14 @@ public class AiMovementSystem {
             Position pos = entity.get(Position.class).get();
 
             if (ai.state == AiState.PATROL) {
-                // Simple random walk
-                List<Point> neighbors = Pathfinder.getNeighbors(gameState.map, new Point(pos.x(), pos.y()));
+                // Simple random walk, avoiding vents
+                List<Point> neighbors = Pathfinder.getAiNeighbors(gameState.map, new Point(pos.x(), pos.y()));
                 if (!neighbors.isEmpty()) {
                     Point nextMove = neighbors.get(rng.nextInt(neighbors.size()));
                     entity.add(new Position(nextMove.x, nextMove.y));
                 }
+            } else if (ai.state == AiState.CAMP_VENT) {
+                // Do not move while camping
             } else if (ai.targetPosition != null) {
                 // Don't move if already at target
                 if (pos.x() == ai.targetPosition.x && pos.y() == ai.targetPosition.y) {
@@ -43,7 +45,7 @@ public class AiMovementSystem {
 
                 // Recalculate path if it's null or we're in CHASE mode
                 if (ai.currentPath == null || ai.currentPath.isEmpty() || ai.state == AiState.CHASE) {
-                    ai.currentPath = Pathfinder.findPath(gameState.map, new Point(pos.x(), pos.y()), ai.targetPosition);
+                    ai.currentPath = Pathfinder.findAiPath(gameState.map, new Point(pos.x(), pos.y()), ai.targetPosition);
                 }
 
                 if (ai.currentPath != null && !ai.currentPath.isEmpty()) {

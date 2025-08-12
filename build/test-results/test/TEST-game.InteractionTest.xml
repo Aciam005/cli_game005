@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="game.InteractionTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2025-08-09T13:56:30" hostname="devbox" time="0.008">
+<testsuite name="game.InteractionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-08-09T20:07:36" hostname="devbox" time="0.022">
   <properties/>
-  <testcase name="testEmpDisablesTurret()" classname="game.InteractionTest" time="0.005"/>
-  <testcase name="testBulkheadInteraction()" classname="game.InteractionTest" time="0.002"/>
+  <testcase name="testPlaceholder()" classname="game.InteractionTest" time="0.022"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

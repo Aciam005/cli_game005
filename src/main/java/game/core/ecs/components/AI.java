@@ -9,6 +9,7 @@ public class AI implements Component {
     public AiState state = AiState.PATROL;
     public Point targetPosition; // For investigating or chasing
     public int searchTurnsLeft = 0;
+    public int campTurnsLeft = 0;
     public List<Point> currentPath;
 
     public AI() {
