@@ -42,6 +42,7 @@ public class TurnEngine {
     public void processTurn() {
         // Player action (move, peek, etc.) is handled by other methods before this.
         // This method processes the consequences of the player's action.
+        gameState.turnsTaken++;
 
         // 1. Turrets act
         turretSystem.process(gameState);

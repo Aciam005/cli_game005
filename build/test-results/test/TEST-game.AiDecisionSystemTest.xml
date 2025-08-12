@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="game.AiDecisionSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-09T20:07:36" hostname="devbox" time="0.011">
+<testsuite name="game.AiDecisionSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-12T12:14:01" hostname="devbox" time="0.043">
   <properties/>
-  <testcase name="testDroneCampsVentExit()" classname="game.AiDecisionSystemTest" time="0.004"/>
-  <testcase name="testChaseToSearch()" classname="game.AiDecisionSystemTest" time="0.001"/>
-  <testcase name="testPatrolToChase()" classname="game.AiDecisionSystemTest" time="0.001"/>
+  <testcase name="testDroneCampsVentExit()" classname="game.AiDecisionSystemTest" time="0.032"/>
+  <testcase name="testChaseToSearch()" classname="game.AiDecisionSystemTest" time="0.003"/>
+  <testcase name="testPatrolToChase()" classname="game.AiDecisionSystemTest" time="0.002"/>
   <testcase name="testPatrolToInvestigate()" classname="game.AiDecisionSystemTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

@@ -68,37 +68,92 @@ public class AsciiRenderer {
     }
 
     private void drawHud(StringBuilder sb, GameState gameState) {
-        sb.append("----------------------------------------\n");
-        // Line 1: HP, Pos, Crates
-        gameState.player.get(Stats.class).ifPresent(stats ->
-            sb.append(String.format("HP: %d/%d   ", stats.hp(), stats.maxHp()))
-        );
-        gameState.player.get(Position.class).ifPresent(pos ->
-            sb.append(String.format("Pos: (%d, %d)   ", pos.x(), pos.y()))
-        );
-        sb.append(String.format("Crates: %d/3   ", gameState.cratesCollected));
-        sb.append("\n");
+        // Right-aligned info
+        String rightAligned = "";
+        if (gameState.player != null) {
+            rightAligned = String.format("Seed: %d | Mode: %s | Ammo: %d | Crates: %d/3",
+                gameState.seed,
+                gameState.player.get(PlayerState.class).map(ps -> ps.mode.name()).orElse("N/A"),
+                gameState.player.get(Inventory.class).map(inv -> inv.items.getOrDefault("ammo", 0)).orElse(0),
+                gameState.cratesCollected);
+        }
 
-        // Line 2: Mode, Ammo
-        gameState.player.get(PlayerState.class).ifPresent(ps ->
-            sb.append(String.format("Mode: %-10s ", ps.mode.name()))
-        );
-        gameState.player.get(Inventory.class).ifPresent(inv ->
-            sb.append(String.format("Ammo: %d   ", inv.items.getOrDefault("ammo", 0)))
-        );
-        sb.append("\n");
+        // Left-aligned info
+        String leftAligned = "";
+        if (gameState.player != null) {
+            leftAligned = String.format("HP: %d/%d | Coord: (%d,%d)",
+                gameState.player.get(Stats.class).map(Stats::hp).orElse(0),
+                gameState.player.get(Stats.class).map(Stats::maxHp).orElse(0),
+                gameState.player.get(Position.class).map(Position::x).orElse(0),
+                gameState.player.get(Position.class).map(Position::y).orElse(0));
+        }
 
-        // Line 3: Items
-        gameState.player.get(Inventory.class).ifPresent(inv -> {
-            String items = inv.items.entrySet().stream()
-                .filter(e -> e.getValue() > 0 && !e.getKey().equals("ammo"))
-                .map(e -> String.format("%s(%d)", e.getKey(), e.getValue()))
-                .collect(Collectors.joining(" "));
-            sb.append("Items: ").append(items);
-        });
-        sb.append("\n");
-        sb.append("Legend: @=Player, D=Drone, T=Turret, C=Crate, *=Item, $=Terminal\n");
+        int totalWidth = gameState.map.getWidth();
+        int spacing = totalWidth - leftAligned.length() - rightAligned.length();
+        String hudLine = leftAligned + " ".repeat(Math.max(0, spacing)) + rightAligned;
+
         sb.append("----------------------------------------\n");
+        sb.append(hudLine).append("\n");
+        sb.append("----------------------------------------\n");
+    }
+
+    public void renderMenu(GameState gameState) {
+        clearScreen();
+        System.out.println("Signal Runner");
+        System.out.println("v0.1.0-alpha");
+        System.out.println("\nOptions:");
+        System.out.println("  S - Start (random seed)");
+        System.out.println("  Q - Quit");
+        System.out.println("\nPress H in-game for controls.");
+        System.out.print("\n> ");
+    }
+
+    public void renderHelp() {
+        clearScreen();
+        System.out.println("--- Controls & Legend ---\n");
+        System.out.println("Controls:");
+        System.out.println("  WASD  - Move");
+        System.out.println("  .     - Wait");
+        System.out.println("  P+dir - Peek");
+        System.out.println("  E     - Interact (Doors, Terminals, Crates)");
+        System.out.println("  1     - Use Med-gel");
+        System.out.println("  2     - Use EMP Charge (requires target)");
+        System.out.println("  3     - Toggle Pistol");
+        System.out.println("  F+dir - Fire Pistol");
+        System.out.println("  Q     - Quit Game\n");
+        System.out.println("Legend:");
+        System.out.println("  @ - Player     d - Drone        T - Turret");
+        System.out.println("  v - Vent       B - Bulkhead     + - Shot Ray");
+        System.out.println("  . - Floor      # - Wall         D - Door");
+        System.out.println("  A - Airlock    $ - Crate        Ƭ - Terminal");
+    }
+
+    public void renderEndScreen(GameState gameState) {
+        clearScreen();
+        if (gameState.status == GameState.GameStatus.WIN) {
+            System.out.println("--- You Win! ---");
+            System.out.println("You escaped the facility.");
+        } else {
+            System.out.println("--- You Lose! ---");
+            System.out.println("You have perished in the depths of the facility.");
+        }
+
+        System.out.println("\n--- Game Summary ---");
+        System.out.printf("Crates collected: %d\n", gameState.cratesCollected);
+        System.out.printf("Turns taken: %d\n", gameState.turnsTaken);
+        System.out.printf("Seed used: %d\n", gameState.seed);
+
+        System.out.println("\nOptions:");
+        System.out.println("  R - Restart (same seed)");
+        System.out.println("  N - New Game (new seed)");
+        System.out.println("  M - Main Menu");
+        System.out.println("  Q - Quit");
+        System.out.print("\n> ");
+    }
+
+    private void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
     }
 
     private char getTileChar(Tile tile) {

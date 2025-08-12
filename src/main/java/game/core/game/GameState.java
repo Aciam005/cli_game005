@@ -8,10 +8,21 @@ import java.util.Queue;
 import java.util.LinkedList;
 
 public class GameState {
+    public enum GameStatus {
+        MENU,
+        RUNNING,
+        HELP,
+        WIN,
+        LOSE
+    }
+
+    public GameStatus status = GameStatus.MENU;
     public final TileMap map;
     public final List<Entity> entities = new ArrayList<>();
     public Entity player;
     public int cratesCollected = 0;
+    public int turnsTaken = 0;
+    public long seed;
 
     public boolean[][] visibleTiles;
     public final boolean[][] exploredTiles;
