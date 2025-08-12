@@ -25,6 +25,7 @@ public class Main {
     private static Scanner scanner;
     private static ShootingSystem shootingSystem;
     public static List<Point> aimRay = null;
+    private static GameState.GameStatus previousStatus; // To handle returning from Help screen
 
     public static void main(String[] args) {
         if (!"true".equals(System.getProperty("feature.signalRunner", "true"))) {
@@ -32,31 +33,37 @@ public class Main {
             return;
         }
 
-        long seed = System.currentTimeMillis();
+        long initialSeed = System.currentTimeMillis();
         for (String arg : args) {
             if (arg.startsWith("--seed")) {
                 try {
-                    seed = Long.parseLong(arg.split("=")[1]);
+                    initialSeed = Long.parseLong(arg.split("=")[1]);
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid seed format. Using current time as seed.");
                 }
             }
         }
 
-        initializeGame(seed);
-        runGameLoop();
+        scanner = new Scanner(System.in);
+        renderer = new AsciiRenderer();
+        shootingSystem = new ShootingSystem();
+
+        // GameState is not initialized until the player starts a game
+        gameState = new GameState(null); // Dummy GameState for MENU
+        gameState.seed = initialSeed;
+
+        run(); // Start the state machine
+
         scanner.close();
         System.out.println("Exiting game.");
     }
 
-    private static void initializeGame(long seed) {
+    private static void startGame(long seed) {
         Rng rng = new Rng(seed);
         BspGenerator generator = new BspGenerator(rng, 40, 20);
         gameState = new GameState(generator.generate());
+        gameState.seed = seed;
         turnEngine = new TurnEngine(gameState, rng);
-        renderer = new AsciiRenderer();
-        scanner = new Scanner(System.in);
-        shootingSystem = new ShootingSystem();
 
         // Player
         Point startPos = generator.getAirlockLocation();
@@ -71,7 +78,9 @@ public class Main {
             inv.items.put("emp-charge", 1);
             inv.items.put("med-gel", 1);
             inv.items.put("ammo", 6);
+            inv.items.put("pistol", 1);
         });
+        gameState.player.get(PlayerState.class).ifPresent(ps -> ps.mode = PlayerState.WeaponMode.PISTOL);
         gameState.entities.add(gameState.player);
 
         List<Rectangle> rooms = new ArrayList<>(generator.getRooms());
@@ -117,117 +126,169 @@ public class Main {
         }
 
         turnEngine.updateFov(); // Initial FOV calculation
+        gameState.status = GameState.GameStatus.RUNNING;
     }
 
-    private static void runGameLoop() {
-        boolean running = true;
-        while (running) {
-            renderer.render(gameState, aimRay);
-            aimRay = null; // Clear ray after one frame
-
-            System.out.print("Cmd (w,a,s,d,e,p,.,1,2,3,f,q): ");
-            String input;
-            try {
-                input = scanner.nextLine();
-            } catch (java.util.NoSuchElementException e) {
-                // Input stream was closed (e.g., in a non-interactive environment)
-                break; // Exit loop cleanly
+    private static void run() {
+        boolean exitGame = false;
+        while (!exitGame) {
+            switch (gameState.status) {
+                case MENU -> handleMenu();
+                case RUNNING -> runGame();
+                case HELP -> handleHelp();
+                case WIN, LOSE -> handleEndScreen();
             }
-
-            if (input == null || input.isEmpty()) {
-                continue; // Handle empty input
+            if (gameState.status == null) { // A null status is the signal to exit
+                exitGame = true;
             }
-            char command = input.toLowerCase().charAt(0);
+        }
+    }
 
-            boolean turnTaken = false;
-            switch (command) {
-                case 'w' -> turnTaken = turnEngine.handleMove(Direction.NORTH);
-                case 'a' -> turnTaken = turnEngine.handleMove(Direction.WEST);
-                case 's' -> turnTaken = turnEngine.handleMove(Direction.SOUTH);
-                case 'd' -> turnTaken = turnEngine.handleMove(Direction.EAST);
-                case '.' -> turnTaken = true;
-                case 'e' -> turnTaken = turnEngine.handleInteract();
-                case '1' -> turnTaken = turnEngine.handleUseItem("med-gel", null);
-                case '2' -> {
-                    System.out.print("Target EMP at (x,y): ");
-                    try {
-                        String[] coords = scanner.nextLine().split(",");
-                        int x = Integer.parseInt(coords[0].trim());
-                        int y = Integer.parseInt(coords[1].trim());
-                        turnTaken = turnEngine.handleUseItem("emp-charge", new Point(x, y));
-                    } catch (Exception e) {
-                        gameState.messageLog.add("Invalid target coordinates.");
+    private static void runGame() {
+        renderer.render(gameState, aimRay);
+        aimRay = null; // Clear ray after one frame
+
+        System.out.print("Cmd (h for help): ");
+        String input = getInput();
+        if (input.isEmpty()) return;
+        char command = input.toLowerCase().charAt(0);
+
+        boolean turnTaken = false;
+        switch (command) {
+            case 'w' -> turnTaken = turnEngine.handleMove(Direction.NORTH);
+            case 'a' -> turnTaken = turnEngine.handleMove(Direction.WEST);
+            case 's' -> turnTaken = turnEngine.handleMove(Direction.SOUTH);
+            case 'd' -> turnTaken = turnEngine.handleMove(Direction.EAST);
+            case '.' -> turnTaken = true;
+            case 'e' -> turnTaken = turnEngine.handleInteract();
+            case '1' -> turnTaken = turnEngine.handleUseItem("med-gel", null);
+            case '2' -> {
+                System.out.print("Target EMP at (x,y): ");
+                try {
+                    String[] coords = scanner.nextLine().split(",");
+                    int x = Integer.parseInt(coords[0].trim());
+                    int y = Integer.parseInt(coords[1].trim());
+                    turnTaken = turnEngine.handleUseItem("emp-charge", new Point(x, y));
+                } catch (Exception e) {
+                    gameState.messageLog.add("Invalid target coordinates.");
+                }
+            }
+            case 'p' -> {
+                System.out.print("Peek direction (w,a,s,d): ");
+                String peekDirStr = getInput();
+                if (!peekDirStr.isEmpty()) {
+                    Direction dir = switch (peekDirStr.charAt(0)) {
+                        case 'w' -> Direction.NORTH; case 'a' -> Direction.WEST;
+                        case 's' -> Direction.SOUTH; case 'd' -> Direction.EAST;
+                        default -> null;
+                    };
+                    if (dir != null) {
+                        turnEngine.handlePeek(dir);
+                        turnTaken = true;
                     }
                 }
-                case 'p' -> {
-                    System.out.print("Peek direction (w,a,s,d): ");
-                    String peekDirStr = scanner.nextLine().toLowerCase();
-                    if (!peekDirStr.isEmpty()) {
-                        Direction dir = switch (peekDirStr.charAt(0)) {
+            }
+            case 'q' -> gameState.status = null; // Signal to exit
+            case 'h' -> enterHelpState();
+            case '3' -> {
+                gameState.player.get(PlayerState.class).ifPresent(ps -> {
+                    if (ps.mode == PlayerState.WeaponMode.DEFAULT) {
+                        ps.mode = PlayerState.WeaponMode.PISTOL;
+                        gameState.messageLog.add("Pistol equipped.");
+                    } else {
+                        ps.mode = PlayerState.WeaponMode.DEFAULT;
+                        gameState.messageLog.add("Switched to default mode.");
+                    }
+                });
+                break; // No turn taken
+            }
+            case 'f' -> {
+                if (gameState.player.get(PlayerState.class).map(ps -> ps.mode == PlayerState.WeaponMode.PISTOL).orElse(false)) {
+                    System.out.print("Fire direction (w,a,s,d): ");
+                    String fireDirStr = getInput();
+                    if (!fireDirStr.isEmpty()) {
+                        Direction dir = switch (fireDirStr.charAt(0)) {
                             case 'w' -> Direction.NORTH; case 'a' -> Direction.WEST;
                             case 's' -> Direction.SOUTH; case 'd' -> Direction.EAST;
                             default -> null;
                         };
                         if (dir != null) {
-                            turnEngine.handlePeek(dir);
-                            turnTaken = true;
-                        }
-                    }
-                }
-                case 'q' -> running = false;
-                case '3' -> {
-                    gameState.player.get(PlayerState.class).ifPresent(ps -> {
-                        if (ps.mode == PlayerState.WeaponMode.DEFAULT) {
-                            ps.mode = PlayerState.WeaponMode.PISTOL;
-                            gameState.messageLog.add("Pistol equipped.");
-                        } else {
-                            ps.mode = PlayerState.WeaponMode.DEFAULT;
-                            gameState.messageLog.add("Switched to default mode.");
-                        }
-                    });
-                    break; // No turn taken
-                }
-                case 'f' -> {
-                    if (gameState.player.get(PlayerState.class).map(ps -> ps.mode == PlayerState.WeaponMode.PISTOL).orElse(false)) {
-                        System.out.print("Fire direction (w,a,s,d): ");
-                        String fireDirStr = scanner.nextLine().toLowerCase();
-                        if (!fireDirStr.isEmpty()) {
-                            Direction dir = switch (fireDirStr.charAt(0)) {
-                                case 'w' -> Direction.NORTH;
-                                case 'a' -> Direction.WEST;
-                                case 's' -> Direction.SOUTH;
-                                case 'd' -> Direction.EAST;
-                                default -> null;
-                            };
-                            if (dir != null) {
-                                turnTaken = shootingSystem.fire(gameState, dir);
-                                if (turnTaken) {
-                                    aimRay = new ArrayList<>(shootingSystem.rayPath);
-                                }
+                            turnTaken = shootingSystem.fire(gameState, dir);
+                            if (turnTaken) {
+                                aimRay = new ArrayList<>(shootingSystem.rayPath);
                             }
                         }
-                    } else {
-                        gameState.messageLog.add("Pistol not equipped.");
                     }
-                    break;
+                } else {
+                    gameState.messageLog.add("Pistol not equipped.");
                 }
+                break;
             }
+        }
 
-            if (turnTaken) {
-                turnEngine.processTurn();
-            }
+        if (turnTaken) {
+            turnEngine.processTurn();
+        }
 
-            if (gameState.player.get(Stats.class).get().hp() <= 0) {
-                renderer.render(gameState, null);
-                System.out.println("\n--- You have died. Game Over. ---");
-                running = false;
-            }
-            Position playerPos = gameState.player.get(Position.class).get();
-            if (gameState.map.getTile(playerPos.x(), playerPos.y()) == Tile.AIRLOCK && gameState.cratesCollected >= 3) {
-                renderer.render(gameState, null);
-                System.out.println("\n--- You collected all the crates and returned to the airlock. You win! ---");
-                running = false;
-            }
+        // Check for win/loss conditions
+        if (gameState.player.get(Stats.class).get().hp() <= 0) {
+            gameState.status = GameState.GameStatus.LOSE;
+        }
+        Position playerPos = gameState.player.get(Position.class).get();
+        if (gameState.map.getTile(playerPos.x(), playerPos.y()) == Tile.AIRLOCK && gameState.cratesCollected >= 3) {
+            gameState.status = GameState.GameStatus.WIN;
+        }
+    }
+
+    private static void handleMenu() {
+        renderer.renderMenu(gameState);
+        String input = getInput();
+        if (input.isEmpty()) return;
+        char command = input.toLowerCase().charAt(0);
+
+        switch (command) {
+            case 's' -> startGame(System.currentTimeMillis());
+            case 'h' -> enterHelpState();
+            case 'q' -> gameState.status = null; // Signal to exit
+        }
+    }
+
+    private static void enterHelpState() {
+        previousStatus = gameState.status;
+        gameState.status = GameState.GameStatus.HELP;
+    }
+
+    private static void handleHelp() {
+        renderer.renderHelp();
+        System.out.print("Press H to close: ");
+        String input = getInput();
+        if (input.isEmpty()) return;
+        char command = input.toLowerCase().charAt(0);
+
+        if (command == 'h') {
+            gameState.status = previousStatus;
+        }
+    }
+
+    private static void handleEndScreen() {
+        renderer.renderEndScreen(gameState);
+        String input = getInput();
+        if (input.isEmpty()) return;
+        char command = input.toLowerCase().charAt(0);
+
+        switch (command) {
+            case 'r' -> startGame(gameState.seed); // Restart with the same seed
+            case 'n' -> startGame(System.currentTimeMillis()); // Start new game
+            case 'm' -> gameState.status = GameState.GameStatus.MENU;
+            case 'q' -> gameState.status = null; // Signal to exit
+        }
+    }
+
+    private static String getInput() {
+        try {
+            return scanner.nextLine();
+        } catch (java.util.NoSuchElementException e) {
+            return "q"; // Default to quit on input stream close
         }
     }
 }

@@ -1,6 +1,7 @@
 package game.core.game;
 
 import game.core.ecs.Entity;
+import game.core.ecs.components.Flags;
 import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
 import game.core.ecs.systems.AiDecisionSystem;
@@ -36,12 +37,13 @@ public class TurnEngine {
         this.interactionSystem = new InteractionSystem();
         this.aiPerceptionSystem = new AiPerceptionSystem();
         this.aiDecisionSystem = new AiDecisionSystem();
-        this.aiMovementSystem = new AiMovementSystem(rng);
+        this.aiMovementSystem = new AiMovementSystem(rng, combatSystem);
     }
 
     public void processTurn() {
         // Player action (move, peek, etc.) is handled by other methods before this.
         // This method processes the consequences of the player's action.
+        gameState.turnsTaken++;
 
         // 1. Turrets act
         turretSystem.process(gameState);
@@ -49,7 +51,9 @@ public class TurnEngine {
         aiPerceptionSystem.process(gameState);
         aiDecisionSystem.process(gameState);
         aiMovementSystem.process(gameState);
-        // 3. Update player's view for the next render
+        // 3. Clean up dead entities
+        gameState.entities.removeIf(e -> e.get(Flags.class).map(f -> f.isDead).orElse(false));
+        // 4. Update player's view for the next render
         updateFov();
     }
 
@@ -65,7 +69,7 @@ public class TurnEngine {
 
         Entity targetEntity = getEntityAt(newX, newY);
         if (targetEntity != null && targetEntity != gameState.player && targetEntity.has(Stats.class)) {
-            combatSystem.handleAttack(gameState.player, targetEntity);
+            combatSystem.handleAttack(gameState, gameState.player, targetEntity);
             return true; // Attack takes a turn.
         }
 
@@ -112,7 +116,7 @@ public class TurnEngine {
 
     public void updateFov() {
         gameState.player.get(Position.class).ifPresent(pos -> {
-            int fovRadius = 4; // Default FOV
+            int fovRadius = 12; // Default FOV
             if (gameState.map.getTile(pos.x(), pos.y()).isVent()) {
                 fovRadius = 2; // Reduced FOV in vents
             }

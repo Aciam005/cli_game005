@@ -62,7 +62,7 @@ public class TurretSystem {
         }
 
         if (canSeePlayer) {
-            combatSystem.handleAttack(turret, gameState.player);
+            combatSystem.handleAttack(gameState, turret, gameState.player);
         }
     }
 }
