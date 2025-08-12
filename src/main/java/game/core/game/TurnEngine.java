@@ -125,6 +125,10 @@ public class TurnEngine {
         });
     }
 
+    public CombatSystem getCombatSystem() {
+        return combatSystem;
+    }
+
     public void handlePeek(Direction direction) {
         gameState.player.get(Position.class).ifPresent(pos -> {
             int x0 = pos.x();

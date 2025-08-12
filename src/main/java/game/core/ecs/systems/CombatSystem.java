@@ -1,6 +1,7 @@
 package game.core.ecs.systems;
 
 import game.core.ecs.Entity;
+import game.core.ecs.components.AI;
 import game.core.ecs.components.Flags;
 import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
@@ -16,6 +17,26 @@ public class CombatSystem {
 
     public CombatSystem(Rng rng) {
         this.rng = rng;
+    }
+
+    public void applyDamage(GameState gameState, Entity target, int damage, String attackerName) {
+        Stats oldStats = target.get(Stats.class).get();
+        int newHp = oldStats.hp() - damage;
+
+        Stats newStats = new Stats(newHp, oldStats.maxHp(), oldStats.atk(), oldStats.ev());
+        target.add(newStats);
+
+        String targetName = getEntityName(target);
+        String message = String.format("%s hits %s for %d damage.", attackerName, targetName, damage);
+        gameState.messageLog.add(message);
+        combatLogs.add(message); // Also log to combat log for consistency
+
+        if (newHp <= 0) {
+            String deathMessage = String.format("The %s is destroyed.", targetName);
+            gameState.messageLog.add(deathMessage);
+            combatLogs.add(deathMessage);
+            target.get(Flags.class).ifPresent(f -> f.isDead = true);
+        }
     }
 
     public boolean handleAttack(GameState gameState, Entity attacker, Entity defender) {
@@ -39,28 +60,26 @@ public class CombatSystem {
         int roll = rng.nextInt(20) + 1;
         boolean hit = (roll + attackerStats.atk()) > (10 + defenderStats.ev());
 
-        // A more descriptive name would be good, maybe from a 'Name' component later.
-        String attackerName = attacker.get(Flags.class).map(f -> f.isPlayer ? "Player" : (f.isTurret ? "Turret" : "Drone")).orElse("Entity");
-        String defenderName = defender.get(Flags.class).map(f -> f.isPlayer ? "Player" : (f.isTurret ? "Turret" : "Drone")).orElse("Entity");
+        String attackerName = getEntityName(attacker);
+        String defenderName = getEntityName(defender);
 
         if (hit) {
             // Fixed damage of 1 for now.
             int damage = 1;
-            int newHp = defenderStats.hp() - damage;
-
-            Stats newDefenderStats = new Stats(newHp, defenderStats.maxHp(), defenderStats.atk(), defenderStats.ev());
-            defender.add(newDefenderStats);
-
-            combatLogs.add(String.format("%s hits %s for %d damage.", attackerName, defenderName, damage));
-
-            if (newHp <= 0) {
-                combatLogs.add(String.format("%s has been destroyed.", defenderName));
-                defender.get(Flags.class).ifPresent(f -> f.isDead = true);
-            }
+            applyDamage(gameState, defender, damage, attackerName);
             return true;
         } else {
-            combatLogs.add(String.format("%s misses %s.", attackerName, defenderName));
+            String message = String.format("%s misses %s.", attackerName, defenderName);
+            gameState.messageLog.add(message);
+            combatLogs.add(message);
             return false;
         }
+    }
+
+    public String getEntityName(Entity entity) {
+        if (entity.get(Flags.class).map(f -> f.isPlayer).orElse(false)) return "Player";
+        if (entity.get(Flags.class).map(f -> f.isTurret).orElse(false)) return "Turret";
+        if (entity.has(AI.class)) return "Drone";
+        return "Entity";
     }
 }

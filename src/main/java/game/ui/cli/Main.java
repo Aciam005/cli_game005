@@ -46,7 +46,6 @@ public class Main {
 
         scanner = new Scanner(System.in);
         renderer = new AsciiRenderer();
-        shootingSystem = new ShootingSystem();
 
         // GameState is not initialized until the player starts a game
         gameState = new GameState(null); // Dummy GameState for MENU
@@ -64,6 +63,7 @@ public class Main {
         gameState = new GameState(generator.generate());
         gameState.seed = seed;
         turnEngine = new TurnEngine(gameState, rng);
+        shootingSystem = new ShootingSystem(turnEngine.getCombatSystem());
 
         // Player
         Point startPos = generator.getAirlockLocation();

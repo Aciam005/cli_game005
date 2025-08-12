@@ -1,7 +1,6 @@
 package game.core.ecs.systems;
 
 import game.core.ecs.Entity;
-import game.core.ecs.components.Flags;
 import game.core.ecs.components.Inventory;
 import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
@@ -18,6 +17,11 @@ public class ShootingSystem {
 
     public final List<String> shootingLogs = new ArrayList<>();
     public final List<Point> rayPath = new ArrayList<>();
+    private final CombatSystem combatSystem;
+
+    public ShootingSystem(CombatSystem combatSystem) {
+        this.combatSystem = combatSystem;
+    }
 
     public boolean fire(GameState gameState, Direction direction) {
         rayPath.clear();
@@ -52,7 +56,7 @@ public class ShootingSystem {
 
                 Position entityPos = entity.get(Position.class).orElse(null);
                 if (entityPos != null && entityPos.x() == x && entityPos.y() == y) {
-                    applyDamage(gameState, entity);
+                    combatSystem.applyDamage(gameState, entity, 2, "Player");
                     gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), 12));
                     return true; // Turn taken
                 }
@@ -70,21 +74,5 @@ public class ShootingSystem {
         gameState.messageLog.add("The shot went into the darkness.");
         gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), 12));
         return true; // Turn taken
-    }
-
-    private void applyDamage(GameState gameState, Entity target) {
-        Stats oldStats = target.get(Stats.class).get();
-        int damage = 2;
-        int newHp = oldStats.hp() - damage;
-
-        Stats newStats = new Stats(newHp, oldStats.maxHp(), oldStats.atk(), oldStats.ev());
-        target.add(newStats);
-
-        String targetName = target.get(Flags.class).map(f -> f.isTurret ? "Turret" : "Drone").orElse("Entity");
-        gameState.messageLog.add(String.format("You hit the %s for %d damage!", targetName, damage));
-
-        if (newHp <= 0) {
-            gameState.messageLog.add(String.format("The %s is destroyed.", targetName));
-        }
     }
 }

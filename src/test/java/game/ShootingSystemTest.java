@@ -3,10 +3,12 @@ package game;
 import game.core.ecs.Entity;
 import game.core.ecs.components.*;
 import game.core.game.Direction;
+import game.core.ecs.systems.CombatSystem;
 import game.core.game.GameState;
 import game.core.ecs.systems.ShootingSystem;
 import game.core.map.Tile;
 import game.core.map.TileMap;
+import game.util.Rng;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +30,9 @@ class ShootingSystemTest {
             }
         }
         gameState = new GameState(map);
-        shootingSystem = new ShootingSystem();
+        Rng rng = new Rng(12345);
+        CombatSystem combatSystem = new CombatSystem(rng);
+        shootingSystem = new ShootingSystem(combatSystem);
 
         player = new Entity(
                 new Position(1, 1),
@@ -54,7 +58,7 @@ class ShootingSystemTest {
         assertEquals(5, player.get(Inventory.class).get().items.get("ammo"));
         assertEquals(1, gameState.noiseEvents.size());
         assertEquals(12, gameState.noiseEvents.peek().radius());
-        assertTrue(gameState.messageLog.stream().anyMatch(s -> s.contains("hit the Drone for 2 damage")));
+        assertTrue(gameState.messageLog.stream().anyMatch(s -> s.contains("Player hits Drone for 2 damage")));
     }
 
     @Test
