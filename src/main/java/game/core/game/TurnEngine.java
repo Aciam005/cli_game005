@@ -36,7 +36,7 @@ public class TurnEngine {
         this.interactionSystem = new InteractionSystem();
         this.aiPerceptionSystem = new AiPerceptionSystem();
         this.aiDecisionSystem = new AiDecisionSystem();
-        this.aiMovementSystem = new AiMovementSystem(rng);
+        this.aiMovementSystem = new AiMovementSystem(rng, combatSystem);
     }
 
     public void processTurn() {
@@ -66,7 +66,7 @@ public class TurnEngine {
 
         Entity targetEntity = getEntityAt(newX, newY);
         if (targetEntity != null && targetEntity != gameState.player && targetEntity.has(Stats.class)) {
-            combatSystem.handleAttack(gameState.player, targetEntity);
+            combatSystem.handleAttack(gameState, gameState.player, targetEntity);
             return true; // Attack takes a turn.
         }
 
@@ -113,7 +113,7 @@ public class TurnEngine {
 
     public void updateFov() {
         gameState.player.get(Position.class).ifPresent(pos -> {
-            int fovRadius = 4; // Default FOV
+            int fovRadius = 12; // Default FOV
             if (gameState.map.getTile(pos.x(), pos.y()).isVent()) {
                 fovRadius = 2; // Reduced FOV in vents
             }

@@ -77,6 +77,7 @@ public class Main {
             inv.items.put("emp-charge", 1);
             inv.items.put("med-gel", 1);
             inv.items.put("ammo", 6);
+            inv.items.put("pistol", 1);
         });
         gameState.entities.add(gameState.player);
 
@@ -245,18 +246,19 @@ public class Main {
 
         switch (command) {
             case 's' -> startGame(System.currentTimeMillis());
+            case 'h' -> gameState.status = GameState.GameStatus.HELP;
             case 'q' -> gameState.status = null; // Signal to exit
         }
     }
 
     private static void handleHelp() {
         renderer.renderHelp();
-        System.out.print("Press H or Esc to close: ");
+        System.out.print("Press H to close: ");
         String input = getInput();
         if (input.isEmpty()) return;
         char command = input.toLowerCase().charAt(0);
 
-        if (command == 'h' || command == 27) { // 27 is ASCII for Esc
+        if (command == 'h') {
             gameState.status = GameState.GameStatus.RUNNING;
         }
     }

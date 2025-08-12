@@ -60,7 +60,7 @@ public class CombatSystemTest {
         Entity attacker = new Entity(new Stats(1, 1, 100, 0), new Flags());
         Entity defender = new Entity(new Stats(10, 10, 0, 0), new Flags());
 
-        boolean hit = combatSystem.handleAttack(attacker, defender);
+        boolean hit = combatSystem.handleAttack(gameState, attacker, defender);
 
         assertTrue(hit, "Attack should be a guaranteed hit.");
         assertEquals(9, defender.get(Stats.class).get().hp(), "Defender should lose 1 HP.");
@@ -72,7 +72,7 @@ public class CombatSystemTest {
         Entity attacker = new Entity(new Stats(1, 1, 0, 0), new Flags());
         Entity defender = new Entity(new Stats(10, 10, 0, 100), new Flags());
 
-        boolean hit = combatSystem.handleAttack(attacker, defender);
+        boolean hit = combatSystem.handleAttack(gameState, attacker, defender);
 
         assertFalse(hit, "Attack should be a guaranteed miss.");
         assertEquals(10, defender.get(Stats.class).get().hp(), "Defender HP should be unchanged.");

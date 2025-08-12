@@ -71,7 +71,9 @@ public class AsciiRenderer {
         // Right-aligned info
         String rightAligned = "";
         if (gameState.player != null) {
-            rightAligned = String.format("Seed: %d | Mode: %s | Ammo: %d | Crates: %d/3",
+            rightAligned = String.format("Coord: (%d,%d) Seed: %d Mode: %s Ammo: %d Crates: %d/3",
+                gameState.player.get(Position.class).map(Position::x).orElse(0),
+                gameState.player.get(Position.class).map(Position::y).orElse(0),
                 gameState.seed,
                 gameState.player.get(PlayerState.class).map(ps -> ps.mode.name()).orElse("N/A"),
                 gameState.player.get(Inventory.class).map(inv -> inv.items.getOrDefault("ammo", 0)).orElse(0),
@@ -81,16 +83,17 @@ public class AsciiRenderer {
         // Left-aligned info
         String leftAligned = "";
         if (gameState.player != null) {
-            leftAligned = String.format("HP: %d/%d | Coord: (%d,%d)",
+            leftAligned = String.format("HP: %d/%d",
                 gameState.player.get(Stats.class).map(Stats::hp).orElse(0),
-                gameState.player.get(Stats.class).map(Stats::maxHp).orElse(0),
-                gameState.player.get(Position.class).map(Position::x).orElse(0),
-                gameState.player.get(Position.class).map(Position::y).orElse(0));
+                gameState.player.get(Stats.class).map(Stats::maxHp).orElse(0));
         }
 
-        int totalWidth = gameState.map.getWidth();
+        int totalWidth = 40; // Default width if map is not available
+        if (gameState.map != null) {
+            totalWidth = gameState.map.getWidth();
+        }
         int spacing = totalWidth - leftAligned.length() - rightAligned.length();
-        String hudLine = leftAligned + " ".repeat(Math.max(0, spacing)) + rightAligned;
+        String hudLine = leftAligned + " ".repeat(Math.max(1, spacing)) + rightAligned;
 
         sb.append("----------------------------------------\n");
         sb.append(hudLine).append("\n");

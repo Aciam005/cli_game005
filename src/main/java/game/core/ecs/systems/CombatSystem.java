@@ -2,7 +2,9 @@ package game.core.ecs.systems;
 
 import game.core.ecs.Entity;
 import game.core.ecs.components.Flags;
+import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
+import game.core.game.GameState;
 import game.util.Rng;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,17 @@ public class CombatSystem {
         this.rng = rng;
     }
 
-    public boolean handleAttack(Entity attacker, Entity defender) {
+    public boolean handleAttack(GameState gameState, Entity attacker, Entity defender) {
+        // If defender is player and in a vent, they are immune.
+        if (defender.get(Flags.class).map(f -> f.isPlayer).orElse(false)) {
+            if (defender.has(Position.class)) {
+                Position pos = defender.get(Position.class).get();
+                if (gameState.map.getTile(pos.x(), pos.y()).isVent()) {
+                    return false; // Player is safe in vents
+                }
+            }
+        }
+
         if (!attacker.has(Stats.class) || !defender.has(Stats.class)) {
             return false; // Cannot attack without stats
         }

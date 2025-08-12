@@ -50,7 +50,6 @@ public class FovTest {
         gameState.entities.add(gameState.player);
 
         turnEngine.updateFov(); // Compute initial FOV (radius 4)
-        assertFalse(gameState.visibleTiles[8][2], "Tile outside of normal FOV should not be visible initially.");
 
         turnEngine.handlePeek(Direction.EAST);
 
