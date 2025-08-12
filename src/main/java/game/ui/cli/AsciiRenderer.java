@@ -34,8 +34,12 @@ public class AsciiRenderer {
                 if (gameState.visibleTiles[x][y]) {
                     grid[x][y] = getTileChar(gameState.map.getTile(x, y));
                 } else if (gameState.exploredTiles[x][y]) {
-                    // In a real GUI, this would be greyed out. Here, we just show the tile.
-                    grid[x][y] = getTileChar(gameState.map.getTile(x, y));
+                    // Make explored tiles dimmer. For now, just change floor.
+                    if (gameState.map.getTile(x, y) == Tile.FLOOR) {
+                        grid[x][y] = ',';
+                    } else {
+                        grid[x][y] = getTileChar(gameState.map.getTile(x, y));
+                    }
                 } else {
                     grid[x][y] = ' ';
                 }
@@ -97,6 +101,15 @@ public class AsciiRenderer {
 
         sb.append("----------------------------------------\n");
         sb.append(hudLine).append("\n");
+
+        if (gameState.player != null && gameState.player.has(Inventory.class)) {
+            String items = gameState.player.get(Inventory.class).get().items.entrySet().stream()
+                .filter(e -> e.getValue() > 0 && !e.getKey().equals("ammo"))
+                .map(e -> String.format("%s(%d)", e.getKey(), e.getValue()))
+                .collect(Collectors.joining(" "));
+            sb.append("Items: ").append(items).append("\n");
+        }
+
         sb.append("----------------------------------------\n");
     }
 

@@ -25,6 +25,7 @@ public class Main {
     private static Scanner scanner;
     private static ShootingSystem shootingSystem;
     public static List<Point> aimRay = null;
+    private static GameState.GameStatus previousStatus; // To handle returning from Help screen
 
     public static void main(String[] args) {
         if (!"true".equals(System.getProperty("feature.signalRunner", "true"))) {
@@ -79,6 +80,7 @@ public class Main {
             inv.items.put("ammo", 6);
             inv.items.put("pistol", 1);
         });
+        gameState.player.get(PlayerState.class).ifPresent(ps -> ps.mode = PlayerState.WeaponMode.PISTOL);
         gameState.entities.add(gameState.player);
 
         List<Rectangle> rooms = new ArrayList<>(generator.getRooms());
@@ -187,7 +189,7 @@ public class Main {
                 }
             }
             case 'q' -> gameState.status = null; // Signal to exit
-            case 'h' -> gameState.status = GameState.GameStatus.HELP;
+            case 'h' -> enterHelpState();
             case '3' -> {
                 gameState.player.get(PlayerState.class).ifPresent(ps -> {
                     if (ps.mode == PlayerState.WeaponMode.DEFAULT) {
@@ -246,9 +248,14 @@ public class Main {
 
         switch (command) {
             case 's' -> startGame(System.currentTimeMillis());
-            case 'h' -> gameState.status = GameState.GameStatus.HELP;
+            case 'h' -> enterHelpState();
             case 'q' -> gameState.status = null; // Signal to exit
         }
+    }
+
+    private static void enterHelpState() {
+        previousStatus = gameState.status;
+        gameState.status = GameState.GameStatus.HELP;
     }
 
     private static void handleHelp() {
@@ -259,7 +266,7 @@ public class Main {
         char command = input.toLowerCase().charAt(0);
 
         if (command == 'h') {
-            gameState.status = GameState.GameStatus.RUNNING;
+            gameState.status = previousStatus;
         }
     }
 
