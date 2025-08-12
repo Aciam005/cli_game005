@@ -31,8 +31,13 @@ public class GameState {
 
     public GameState(TileMap map) {
         this.map = map;
-        this.visibleTiles = new boolean[map.getWidth()][map.getHeight()];
-        this.exploredTiles = new boolean[map.getWidth()][map.getHeight()];
+        if (map != null) {
+            this.visibleTiles = new boolean[map.getWidth()][map.getHeight()];
+            this.exploredTiles = new boolean[map.getWidth()][map.getHeight()];
+        } else {
+            this.visibleTiles = null;
+            this.exploredTiles = null;
+        }
     }
 
     public void updateVisibility(boolean[][] newVisibility) {
