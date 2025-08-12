@@ -8,6 +8,7 @@ import game.core.game.Direction;
 import game.core.game.GameState;
 import game.core.game.NoiseEvent;
 import game.core.map.Tile;
+import game.util.Config;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class ShootingSystem {
         int x = playerPos.x();
         int y = playerPos.y();
 
-        for (int i = 1; i <= 6; i++) { // Max range 6, same as Peek
+        for (int i = 1; i <= Config.getInt("player.shoot_range"); i++) { // Max range 6, same as Peek
             x += direction.dx;
             y += direction.dy;
             rayPath.add(new Point(x, y));
@@ -56,8 +57,8 @@ public class ShootingSystem {
 
                 Position entityPos = entity.get(Position.class).orElse(null);
                 if (entityPos != null && entityPos.x() == x && entityPos.y() == y) {
-                    combatSystem.applyDamage(gameState, entity, 2, "Player");
-                    gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), 12));
+                    combatSystem.applyDamage(gameState, entity, Config.getInt("player.shoot_damage"), "Player");
+                    gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), Config.getInt("player.shoot_noise_radius", 12)));
                     return true; // Turn taken
                 }
             }
@@ -66,13 +67,13 @@ public class ShootingSystem {
             Tile tile = gameState.map.getTile(x, y);
             if (tile != null && !tile.isTransparent()) {
                 gameState.messageLog.add("The shot hit a " + tile.name().toLowerCase().replace('_', ' ') + ".");
-                gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), 12));
+                gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), Config.getInt("player.shoot_noise_radius", 12)));
                 return true; // Turn taken, even if it's a miss
             }
         }
 
         gameState.messageLog.add("The shot went into the darkness.");
-        gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), 12));
+        gameState.noiseEvents.add(new NoiseEvent(new Point(playerPos.x(), playerPos.y()), Config.getInt("player.shoot_noise_radius", 12)));
         return true; // Turn taken
     }
 }

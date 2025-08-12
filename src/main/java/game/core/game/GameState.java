@@ -50,4 +50,13 @@ public class GameState {
             }
         }
     }
+
+    public Entity getEntityAt(int x, int y) {
+        for (Entity entity : entities) {
+            if (entity.get(game.core.ecs.components.Position.class).map(p -> p.x() == x && p.y() == y).orElse(false)) {
+                return entity;
+            }
+        }
+        return null;
+    }
 }

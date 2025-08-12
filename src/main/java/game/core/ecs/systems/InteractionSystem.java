@@ -67,7 +67,7 @@ public class InteractionSystem {
             }
 
             // Interact with entities
-            Entity targetEntity = turnEngine.getEntityAt(targetX, targetY);
+            Entity targetEntity = gameState.getEntityAt(targetX, targetY);
             if (targetEntity != null) {
                 if (targetEntity.has(Crate.class)) {
                     gameState.cratesCollected++;

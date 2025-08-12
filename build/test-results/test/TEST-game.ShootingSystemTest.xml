@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="game.ShootingSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-12T14:03:34" hostname="devbox" time="0.047">
+<testsuite name="game.ShootingSystemTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-08-12T15:06:05" hostname="devbox" time="0.015">
   <properties/>
-  <testcase name="testFirePistol_hitsTarget()" classname="game.ShootingSystemTest" time="0.03"/>
+  <testcase name="testFirePistol_hitsTarget()" classname="game.ShootingSystemTest" time="0.003"/>
   <testcase name="testFirePistol_noAmmo()" classname="game.ShootingSystemTest" time="0.002"/>
   <testcase name="testFirePistol_hitsFirstTarget()" classname="game.ShootingSystemTest" time="0.002"/>
-  <testcase name="testFirePistol_blockedByWall()" classname="game.ShootingSystemTest" time="0.008"/>
+  <testcase name="testFirePistol_blockedByWall()" classname="game.ShootingSystemTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

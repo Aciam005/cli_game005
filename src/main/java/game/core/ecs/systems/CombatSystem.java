@@ -6,6 +6,7 @@ import game.core.ecs.components.Flags;
 import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
 import game.core.game.GameState;
+import game.util.Config;
 import game.util.Rng;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,16 +57,16 @@ public class CombatSystem {
         Stats attackerStats = attacker.get(Stats.class).get();
         Stats defenderStats = defender.get(Stats.class).get();
 
-        // Simple ATK vs EV roll. Let's assume a d20 system.
-        int roll = rng.nextInt(20) + 1;
-        boolean hit = (roll + attackerStats.atk()) > (10 + defenderStats.ev());
+        // The entity's ATK is added to a dice roll, and this must beat a base defense value plus the defender's evasion (EV).
+        int roll = rng.nextInt(Config.getInt("combat.dice_sides")) + 1;
+        boolean hit = (roll + attackerStats.atk()) > (Config.getInt("combat.base_defense") + defenderStats.ev());
 
         String attackerName = getEntityName(attacker);
         String defenderName = getEntityName(defender);
 
         if (hit) {
             // Fixed damage of 1 for now.
-            int damage = 1;
+            int damage = Config.getInt("combat.melee_damage");
             applyDamage(gameState, defender, damage, attackerName);
             return true;
         } else {

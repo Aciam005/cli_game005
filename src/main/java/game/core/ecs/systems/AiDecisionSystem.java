@@ -7,6 +7,7 @@ import game.core.ecs.components.AiState;
 import game.core.ecs.components.Position;
 import game.core.game.GameState;
 import game.core.map.Tile;
+import game.util.Config;
 
 import java.awt.Point;
 
@@ -24,72 +25,83 @@ public class AiDecisionSystem {
 
             // FSM Logic
             switch (ai.state) {
-                case PATROL:
-                    if (perception.canSeePlayer) {
-                        ai.state = AiState.CHASE;
-                        ai.targetPosition = perception.lastKnownPlayerPosition;
-                    } else if (perception.noiseLocation != null) {
-                        ai.state = AiState.INVESTIGATE;
-                        ai.targetPosition = perception.noiseLocation;
-                    }
-                    break;
-                case INVESTIGATE:
-                    if (perception.canSeePlayer) {
-                        ai.state = AiState.CHASE;
-                        ai.targetPosition = perception.lastKnownPlayerPosition;
-                    } else if (pos.x() == ai.targetPosition.x && pos.y() == ai.targetPosition.y) {
-                        // Reached investigation spot
-                        ai.state = AiState.SEARCH;
-                        ai.searchTurnsLeft = 5;
-                    }
-                    break;
-                case CHASE:
-                    if (perception.canSeePlayer) {
-                        ai.targetPosition = perception.lastKnownPlayerPosition;
-                    } else {
-                        // Lost sight of player. Check for nearby vents before searching.
-                        Point lastPos = perception.lastKnownPlayerPosition;
-                        Point ventExit = findAdjacentVent(gameState, lastPos);
-                        if (ventExit != null) {
-                            ai.state = AiState.CAMP_VENT;
-                            ai.targetPosition = ventExit; // The drone will 'face' the vent
-                            ai.campTurnsLeft = 3;
-                            ai.currentPath = null; // Stop moving
-                        } else {
-                            ai.state = AiState.SEARCH;
-                            ai.searchTurnsLeft = 5;
-                        }
-                    }
-                    break;
-                case SEARCH:
-                    if (perception.canSeePlayer) {
-                        ai.state = AiState.CHASE;
-                        ai.targetPosition = perception.lastKnownPlayerPosition;
-                    } else {
-                        ai.searchTurnsLeft--;
-                        boolean atTarget = (pos.x() == ai.targetPosition.x && pos.y() == ai.targetPosition.y);
-                        if (ai.searchTurnsLeft <= 0 || atTarget) {
-                            ai.state = AiState.PATROL;
-                            ai.targetPosition = null;
-                        }
-                    }
-                    break;
-                case CAMP_VENT:
-                    if (perception.canSeePlayer) {
-                        ai.state = AiState.CHASE;
-                        ai.targetPosition = perception.lastKnownPlayerPosition;
-                        ai.campTurnsLeft = 0;
-                    } else {
-                        ai.campTurnsLeft--;
-                        if (ai.campTurnsLeft <= 0) {
-                            ai.state = AiState.PATROL;
-                            ai.targetPosition = null;
-                        }
-                    }
-                    break;
+                case PATROL -> handlePatrolState(ai, perception);
+                case INVESTIGATE -> handleInvestigateState(ai, perception, pos);
+                case CHASE -> handleChaseState(gameState, ai, perception);
+                case SEARCH -> handleSearchState(ai, perception, pos);
+                case CAMP_VENT -> handleCampVentState(ai, perception);
             }
         }
         gameState.noiseEvents.clear();
+    }
+
+    private void handlePatrolState(AI ai, AiPerception perception) {
+        if (perception.canSeePlayer) {
+            ai.state = AiState.CHASE;
+            ai.targetPosition = perception.lastKnownPlayerPosition;
+        } else if (perception.noiseLocation != null) {
+            ai.state = AiState.INVESTIGATE;
+            ai.targetPosition = perception.noiseLocation;
+        }
+    }
+
+    private void handleInvestigateState(AI ai, AiPerception perception, Position pos) {
+        if (perception.canSeePlayer) {
+            ai.state = AiState.CHASE;
+            ai.targetPosition = perception.lastKnownPlayerPosition;
+        } else if (pos.x() == ai.targetPosition.x && pos.y() == ai.targetPosition.y) {
+            // Reached noise/investigation spot, now search the area for a few turns.
+            ai.state = AiState.SEARCH;
+            ai.searchTurnsLeft = Config.getInt("ai.search_turns");
+        }
+    }
+
+    private void handleChaseState(GameState gameState, AI ai, AiPerception perception) {
+        if (perception.canSeePlayer) {
+            ai.targetPosition = perception.lastKnownPlayerPosition;
+        } else {
+            Point lastPos = perception.lastKnownPlayerPosition;
+            Point ventExit = findAdjacentVent(gameState, lastPos);
+            if (ventExit != null) {
+                // Player disappeared near a vent, so camp it for a few turns.
+                ai.state = AiState.CAMP_VENT;
+                ai.targetPosition = ventExit;
+                ai.campTurnsLeft = Config.getInt("ai.camp_turns");
+                ai.currentPath = null;
+            } else {
+                // Player disappeared, but not near a vent, so search the area.
+                ai.state = AiState.SEARCH;
+                ai.searchTurnsLeft = Config.getInt("ai.search_turns");
+            }
+        }
+    }
+
+    private void handleSearchState(AI ai, AiPerception perception, Position pos) {
+        if (perception.canSeePlayer) {
+            ai.state = AiState.CHASE;
+            ai.targetPosition = perception.lastKnownPlayerPosition;
+        } else {
+            ai.searchTurnsLeft--;
+            boolean atTarget = (pos.x() == ai.targetPosition.x && pos.y() == ai.targetPosition.y);
+            if (ai.searchTurnsLeft <= 0 || atTarget) {
+                ai.state = AiState.PATROL;
+                ai.targetPosition = null;
+            }
+        }
+    }
+
+    private void handleCampVentState(AI ai, AiPerception perception) {
+        if (perception.canSeePlayer) {
+            ai.state = AiState.CHASE;
+            ai.targetPosition = perception.lastKnownPlayerPosition;
+            ai.campTurnsLeft = 0;
+        } else {
+            ai.campTurnsLeft--;
+            if (ai.campTurnsLeft <= 0) {
+                ai.state = AiState.PATROL;
+                ai.targetPosition = null;
+            }
+        }
     }
 
     private Point findAdjacentVent(GameState gameState, Point position) {

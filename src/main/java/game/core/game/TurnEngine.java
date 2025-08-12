@@ -67,7 +67,7 @@ public class TurnEngine {
             return false; // Can't move out of bounds. No turn taken.
         }
 
-        Entity targetEntity = getEntityAt(newX, newY);
+        Entity targetEntity = gameState.getEntityAt(newX, newY);
         if (targetEntity != null && targetEntity != gameState.player && targetEntity.has(Stats.class)) {
             combatSystem.handleAttack(gameState, gameState.player, targetEntity);
             return true; // Attack takes a turn.
@@ -99,15 +99,6 @@ public class TurnEngine {
 
     public boolean handleInteract() {
         return interactionSystem.handleInteraction(gameState, this, rng);
-    }
-
-    public Entity getEntityAt(int x, int y) {
-        for (Entity entity : gameState.entities) {
-            if (entity.get(Position.class).map(p -> p.x() == x && p.y() == y).orElse(false)) {
-                return entity;
-            }
-        }
-        return null;
     }
 
     public void generateNoise(Point location, int radius) {
