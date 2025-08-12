@@ -1,6 +1,7 @@
 package game.core.game;
 
 import game.core.ecs.Entity;
+import game.core.ecs.components.Flags;
 import game.core.ecs.components.Position;
 import game.core.ecs.components.Stats;
 import game.core.ecs.systems.AiDecisionSystem;
@@ -50,7 +51,9 @@ public class TurnEngine {
         aiPerceptionSystem.process(gameState);
         aiDecisionSystem.process(gameState);
         aiMovementSystem.process(gameState);
-        // 3. Update player's view for the next render
+        // 3. Clean up dead entities
+        gameState.entities.removeIf(e -> e.get(Flags.class).map(f -> f.isDead).orElse(false));
+        // 4. Update player's view for the next render
         updateFov();
     }
 

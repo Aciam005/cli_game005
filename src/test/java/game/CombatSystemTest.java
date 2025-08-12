@@ -7,6 +7,7 @@ import game.core.ecs.components.Stats;
 import game.core.ecs.systems.CombatSystem;
 import game.core.ecs.systems.TurretSystem;
 import game.core.game.GameState;
+import game.core.game.TurnEngine;
 import game.core.map.Tile;
 import game.core.map.TileMap;
 import game.util.Rng;
@@ -76,5 +77,26 @@ public class CombatSystemTest {
 
         assertFalse(hit, "Attack should be a guaranteed miss.");
         assertEquals(10, defender.get(Stats.class).get().hp(), "Defender HP should be unchanged.");
+    }
+
+    @Test
+    void testEntityDiesAndIsRemoved() {
+        // Attacker with 100 ATK, Defender with 1 HP.
+        Entity attacker = new Entity(new Stats(1, 1, 100, 0), new Flags());
+        Entity defender = new Entity(new Stats(1, 1, 0, 0), new Flags());
+        gameState.entities.add(defender);
+
+        // Attack the defender
+        combatSystem.handleAttack(gameState, attacker, defender);
+
+        // Check that the isDead flag is set
+        assertTrue(defender.get(Flags.class).get().isDead, "Defender's isDead flag should be set.");
+        assertTrue(gameState.entities.contains(defender), "Entity should not be removed immediately.");
+
+        // Run a turn to trigger cleanup
+        TurnEngine turnEngine = new TurnEngine(gameState, new Rng(1));
+        turnEngine.processTurn();
+
+        assertFalse(gameState.entities.contains(defender), "Dead entity should be removed after a turn.");
     }
 }

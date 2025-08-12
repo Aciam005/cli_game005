@@ -54,8 +54,8 @@ public class CombatSystem {
             combatLogs.add(String.format("%s hits %s for %d damage.", attackerName, defenderName, damage));
 
             if (newHp <= 0) {
-                // A death system will handle removing the entity. For now, just log it.
                 combatLogs.add(String.format("%s has been destroyed.", defenderName));
+                defender.get(Flags.class).ifPresent(f -> f.isDead = true);
             }
             return true;
         } else {

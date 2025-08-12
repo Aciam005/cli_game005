@@ -7,4 +7,5 @@ public class Flags implements Component {
     public boolean isTurret = false;
     public boolean isDisabled = false;
     public int disabledTurns = 0;
+    public boolean isDead = false;
 }

@@ -2,7 +2,6 @@ package game.ui.cli;
 
 import game.core.ecs.Entity;
 import game.core.ecs.components.*;
-import game.core.ecs.components.*;
 import game.core.game.GameState;
 import game.core.map.Tile;
 
@@ -75,12 +74,11 @@ public class AsciiRenderer {
         // Right-aligned info
         String rightAligned = "";
         if (gameState.player != null) {
-            rightAligned = String.format("Coord: (%d,%d) Seed: %d Mode: %s Ammo: %d Crates: %d/3",
+            rightAligned = String.format("Coord: (%d,%d) Seed: %d Mode: %s Crates: %d/3",
                 gameState.player.get(Position.class).map(Position::x).orElse(0),
                 gameState.player.get(Position.class).map(Position::y).orElse(0),
                 gameState.seed,
                 gameState.player.get(PlayerState.class).map(ps -> ps.mode.name()).orElse("N/A"),
-                gameState.player.get(Inventory.class).map(inv -> inv.items.getOrDefault("ammo", 0)).orElse(0),
                 gameState.cratesCollected);
         }
 
@@ -103,9 +101,17 @@ public class AsciiRenderer {
         sb.append(hudLine).append("\n");
 
         if (gameState.player != null && gameState.player.has(Inventory.class)) {
-            String items = gameState.player.get(Inventory.class).get().items.entrySet().stream()
+            Inventory inv = gameState.player.get(Inventory.class).get();
+            int ammoCount = inv.items.getOrDefault("ammo", 0);
+
+            String items = inv.items.entrySet().stream()
                 .filter(e -> e.getValue() > 0 && !e.getKey().equals("ammo"))
-                .map(e -> String.format("%s(%d)", e.getKey(), e.getValue()))
+                .map(e -> {
+                    if (e.getKey().equals("pistol")) {
+                        return String.format("pistol(Ammo: %d)", ammoCount);
+                    }
+                    return String.format("%s(%d)", e.getKey(), e.getValue());
+                })
                 .collect(Collectors.joining(" "));
             sb.append("Items: ").append(items).append("\n");
         }
